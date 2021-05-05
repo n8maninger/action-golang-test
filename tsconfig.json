@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"target": "es6",
+		"module": "commonjs",
+		"strict": true,
+		"noImplicitAny": false,
+		"esModuleInterop": true,
+		"moduleResolution": "node"
+	},
+	"files": [
+		"node_modules/setup-go/src/main.ts"
+	],
+	"exclude": [
+		"node_modules"
+	]
+}

@@ -1,0 +1,38 @@
+name: GoLang Test
+description: Run tests with annotations for failures
+author: Nate Maninger <hi@n8m.us>
+inputs:
+  package:
+    description: the package to run the tests for
+    default: "./..."
+    required: false
+  args:
+    description: additional go test command line arguments, individual arguments should be separated by ';'
+    default: ""
+    required: false
+  show-long-running-tests:
+    description: outputs a warning for long running tests, -1 to disable
+    default: 30
+    required: false
+  show-package-output:
+    description: includes package output in the parsed output
+    default: false
+    required: false
+  show-passed-tests:
+    description: shows tests that were run and passed
+    default: false
+    required: false
+  show-stdout:
+    description: shows the unparsed std-out from go test instead of the parsed output
+    default: false
+    required: false
+  skip-go-install:
+    description: skips installing and setting up Go, useful for defining additional parameters for actions/setup-go
+    default: false
+    required: false
+runs:
+  using: "node12"
+  main: "dist/index.js"
+branding:
+  icon: check
+  color: green
