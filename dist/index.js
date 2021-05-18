@@ -5600,29 +5600,26 @@ function run_process(line) {
         let results = testOutput.get(key);
         if (!results)
             results = { elapsed: 0, output: [] };
-        let elapsed;
         switch (parsed.Action) {
             case 'output':
                 results.output.push(parsed.Output);
                 break;
             case 'fail':
-                elapsed = parseFloatOrDefault(parsed.Elapsed);
                 totalRun++;
+                results.elapsed = parseFloatOrDefault(parsed.Elapsed);
                 failed.push(key);
-                results.elapsed = elapsed;
-                if (optLongRunningTestDuration !== -1 && elapsed >= optLongRunningTestDuration)
-                    core.info(`\u001b[33m${key} took ${elapsed}s to fail`);
+                if (optLongRunningTestDuration !== -1 && results.elapsed >= optLongRunningTestDuration)
+                    core.info(`\u001b[33m${key} took ${results.elapsed}s to fail`);
                 if (!optShowStdOut)
-                    core.info(`\u001b[31m${key} failed in ${elapsed}s`);
+                    core.info(`\u001b[31m${key} failed in ${results.elapsed}s`);
                 break;
             case 'pass':
-                elapsed = parseFloatOrDefault(parsed.Elapsed);
                 totalRun++;
-                results.elapsed = elapsed;
-                if (optLongRunningTestDuration !== -1 && elapsed >= optLongRunningTestDuration)
-                    core.info(`\u001b[33m${key} took ${elapsed}s to pass`);
+                results.elapsed = parseFloatOrDefault(parsed.Elapsed);
+                if (optLongRunningTestDuration !== -1 && results.elapsed >= optLongRunningTestDuration)
+                    core.info(`\u001b[33m${key} took ${results.elapsed}s to pass`);
                 if (!optShowStdOut && optShowPassedTests)
-                    core.info(`\u001b[32m${key} passed in ${elapsed}s`);
+                    core.info(`\u001b[32m${key} passed in ${results.elapsed}s`);
                 break;
         }
         testOutput.set(key, results);
