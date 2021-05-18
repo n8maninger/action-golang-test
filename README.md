@@ -51,5 +51,5 @@ jobs:
       - uses: actions/checkout@v2
       - uses: n8maninger/action-golang-test@v1
         with:
-          args: "-race;-failfast"
+          args: "-race;-failfast;-tags=testing debug netgo"
 ```
