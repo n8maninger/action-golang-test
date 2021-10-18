@@ -5,7 +5,10 @@
 		"strict": true,
 		"noImplicitAny": false,
 		"esModuleInterop": true,
-		"moduleResolution": "node"
+		"moduleResolution": "node",
+		"lib": [
+			"es6"
+		]
 	},
 	"files": [
 		"node_modules/setup-go/src/main.ts"

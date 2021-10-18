@@ -13,10 +13,11 @@ const optShowStdOut = getBooleanInput('show-stdout'),
 	optLongRunningTestDuration = atoiOrDefault(core.getInput('show-long-running-tests'), 15);
 
 const testOutput: Map<string, Test> = new Map<string, Test>(),
-	failed: string[] = [];
+	failed: string[] = [],
+	errout: string[] = [];
 let totalRun = 0;
 
-function process(line: string) {
+function stdline(line: string) {
 	try {
 		const parsed = JSON.parse(line);
 
@@ -62,16 +63,8 @@ function process(line: string) {
 	}
 }
 
-const newLineReg = new RegExp(/\r?\n/);
-let buf: string = '';
-function stdout(data: Uint8Array) {
-	let result: RegExpExecArray | null;
-	buf += data.toString();
-	while ((result = newLineReg.exec(buf)) !== null) {
-		const line = buf.slice(0, result.index)
-		buf = buf.slice(result.index + result[0].length);
-		process(line);
-	}
+function errline(line: string) {
+	errout.push(line);
 }
 
 export async function runTests() {
@@ -82,18 +75,23 @@ export async function runTests() {
 	args.push(core.getInput('package'));
 	core.info(`Running test as "go ${args.join(' ')}"`);
 
-	await exec('go', args, {
+	const exit = await exec('go', args, {
 		ignoreReturnCode: true,
 		silent: !optShowStdOut,
 		listeners: {
-			stdout,
+			stdline,
+			errline,
 		},
 	});
 
-	if (buf.length !== 0) process(buf);
-	if (failed.length === 0) return;
-
-	core.warning
+	if (exit !== 0) {
+		core.startGroup('Error')
+		if (errout.length > 0)
+			core.error(errout.join('\n'));
+		else
+			core.setFailed('Tests failed');
+		core.endGroup();
+	} else if (failed.length === 0) return;
 
 	core.setFailed(`${failed.length}/${totalRun} tests failed`);
 	failed.forEach((k) => {
