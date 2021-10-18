@@ -64,6 +64,10 @@ function stdline(line: string) {
 }
 
 function errline(line: string) {
+	// ignore go module output
+	if (line.indexOf('go: downloading') === 0)
+		return;
+
 	errout.push(line);
 }
 
@@ -85,7 +89,7 @@ export async function runTests() {
 	});
 
 	if (exit !== 0) {
-		core.startGroup('Error')
+		core.startGroup('stderr')
 		if (errout.length > 0)
 			core.error(errout.join('\n'));
 		else

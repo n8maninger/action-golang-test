@@ -6090,6 +6090,9 @@ function stdline(line) {
     }
 }
 function errline(line) {
+    // ignore go module output
+    if (line.indexOf('go: downloading') === 0)
+        return;
     errout.push(line);
 }
 function runTests() {
@@ -6106,7 +6109,7 @@ function runTests() {
             },
         });
         if (exit !== 0) {
-            core.startGroup('Error');
+            core.startGroup('stderr');
             if (errout.length > 0)
                 core.error(errout.join('\n'));
             else
