@@ -6050,9 +6050,21 @@ var run_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argu
 
 
 const optShowStdOut = getBooleanInput('show-stdout'), optShowPackageOut = getBooleanInput('show-package-output'), optShowPassedTests = getBooleanInput('show-passed-tests'), optLongRunningTestDuration = atoiOrDefault(core.getInput('show-long-running-tests'), 15);
-const testOutput = new Map(), failed = [], errout = [];
+const testOutput = new Map(), failed = [];
+let errout;
 let totalRun = 0;
-function stdline(line) {
+const newLineReg = new RegExp(/\r?\n/);
+let buf = '';
+function stdout(data) {
+    let result;
+    buf += data.toString();
+    while ((result = newLineReg.exec(buf)) !== null) {
+        const line = buf.slice(0, result.index);
+        buf = buf.slice(result.index + result[0].length);
+        run_process(line);
+    }
+}
+function run_process(line) {
     try {
         const parsed = JSON.parse(line);
         if (!optShowPackageOut && !parsed.Test)
@@ -6086,14 +6098,13 @@ function stdline(line) {
         testOutput.set(key, results);
     }
     catch (ex) {
-        core.debug(`failed to process line "${line}": ${ex}`);
+        core.error(`failed to process line "${line}": ${ex}`);
     }
 }
-function errline(line) {
-    // ignore go module output
-    if (line.indexOf('go: downloading') === 0)
+function stderr(data) {
+    if (!data)
         return;
-    errout.push(line);
+    errout += data.toString();
 }
 function runTests() {
     return run_awaiter(this, void 0, void 0, function* () {
@@ -6104,33 +6115,42 @@ function runTests() {
             ignoreReturnCode: true,
             silent: !optShowStdOut,
             listeners: {
-                stdline,
-                errline,
+                // cannot use stdline or errline, since Go's CLI tools do not behave.
+                stdout,
+                stderr,
             },
         });
+        if (buf.length !== 0)
+            run_process(buf);
         if (exit !== 0) {
-            core.startGroup('stderr');
-            if (errout.length > 0)
-                core.error(errout.join('\n'));
-            else
-                core.setFailed('Tests failed');
-            core.endGroup();
+            errout = errout
+                .split(/\r?\n/)
+                .filter(l => l.indexOf('go: downloading ') === -1)
+                .join('\n');
+            if (errout.length > 0) {
+                core.startGroup('stderr');
+                core.warning(errout);
+                core.endGroup();
+            }
         }
-        else if (failed.length === 0)
-            return;
-        core.setFailed(`${failed.length}/${totalRun} tests failed`);
-        failed.forEach((k) => {
-            var _a;
-            const results = testOutput.get(k);
-            if (!results || !((_a = results === null || results === void 0 ? void 0 : results.output) === null || _a === void 0 ? void 0 : _a.length))
-                return;
-            core.startGroup(`test ${k} failed in ${results.elapsed}s`);
-            core.error([
-                `test ${k} failed in ${results.elapsed}s:`,
-                results.output.join(''),
-            ].join('\n'));
-            core.endGroup();
-        });
+        if (failed.length > 0) {
+            core.setFailed(`${failed.length}/${totalRun} tests failed`);
+            failed.forEach((k) => {
+                var _a;
+                const results = testOutput.get(k);
+                if (!results || !((_a = results === null || results === void 0 ? void 0 : results.output) === null || _a === void 0 ? void 0 : _a.length))
+                    return;
+                core.startGroup(`test ${k} failed in ${results.elapsed}s`);
+                core.error([
+                    `test ${k} failed in ${results.elapsed}s:`,
+                    results.output.join(''),
+                ].join('\n'));
+                core.endGroup();
+            });
+        }
+        else if (exit !== 0) {
+            core.setFailed('Go test failed');
+        }
     });
 }
 
