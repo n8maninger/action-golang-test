@@ -8,11 +8,10 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.6.0",
-    "@actions/exec": "^1.1.0",
-    "setup-go": "git+https://github.com/actions/setup-go.git#v2.1.4"
+    "@actions/exec": "^1.1.0"
   },
   "devDependencies": {
     "@types/node": "^15.0.1",
