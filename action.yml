@@ -26,6 +26,10 @@ inputs:
     description: shows the unparsed std-out from go test instead of the parsed output
     default: false
     required: false
+  skip-go-install:
+    description: unused only included for compatibility purposes
+    default: false
+    required: false
 runs:
   using: "node12"
   main: "dist/index.js"
