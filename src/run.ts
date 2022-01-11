@@ -87,7 +87,7 @@ function stderr(data: Uint8Array) {
 }
 
 export async function runTests() {
-	const args = ['test', '-json', '-v'].concat((core.getInput('additional-args') || '')
+	const args = ['test', '-json', '-v'].concat((core.getInput('args') || '')
 			.split(';').map(a => a.trim()).filter(a => a.length > 0).filter(a => a.length > 0));
 
 	args.push(core.getInput('package'));
