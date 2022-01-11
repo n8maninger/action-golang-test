@@ -14,7 +14,6 @@ show-long-running-tests | number | outputs a yellow warning for tests that take 
 show-package-output | bool | includes additional package output in the log | false
 show-passed-tests | bool | hides output from passed tests in the log | true
 show-stdout | bool | shows the unparsed stdout from `go test` instead of the parsed output | false
-skip-go-install | bool | skips installing and setting up Go, necessary if you are already running `actions/setup-go` as part of the job. | false
 
 ## Usage
 
@@ -32,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+	  - uses: actions/setup-go@v2
       - uses: n8maninger/action-golang-test@v1
 ```
 
@@ -49,6 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+	  - uses: actions/setup-go@v2
       - uses: n8maninger/action-golang-test@v1
         with:
           args: "-race;-failfast;-tags=testing debug netgo"

@@ -26,10 +26,6 @@ inputs:
     description: shows the unparsed std-out from go test instead of the parsed output
     default: false
     required: false
-  skip-go-install:
-    description: skips installing and setting up Go, useful for defining additional parameters for actions/setup-go
-    default: false
-    required: false
 runs:
   using: "node12"
   main: "dist/index.js"

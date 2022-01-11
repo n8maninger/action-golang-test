@@ -10,9 +10,6 @@
 			"es6"
 		]
 	},
-	"files": [
-		"node_modules/setup-go/src/main.ts"
-	],
 	"exclude": [
 		"node_modules"
 	]
