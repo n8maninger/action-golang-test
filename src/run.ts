@@ -13,7 +13,8 @@ const optShowStdOut = getBooleanInput('show-stdout'),
 	optLongRunningTestDuration = atoiOrDefault(core.getInput('show-long-running-tests'), 15);
 
 const testOutput: Map<string, Test> = new Map<string, Test>(),
-	failed: string[] = [];
+	failed: string[] = [],
+	panicked: Set<string> = new Set<string>();
 let errout: string;
 let totalRun = 0;
 
@@ -44,6 +45,9 @@ function process(line: string) {
 
 		switch (parsed.Action) {
 		case 'output':
+			if (results.output.indexOf('panic: runtime error:') == 0)
+				panicked.add(key);
+
 			results.output.push(parsed.Output);
 			break;
 		case 'fail':
@@ -115,6 +119,22 @@ export async function runTests() {
 		}
 	}
 
+	if (panicked.size > 0) {
+		core.setFailed(`${panicked.size}/${totalRun} tests panicked`);
+		panicked.forEach(k => {
+			const results = testOutput.get(k);
+
+			if (!results || !results?.output?.length) return;
+
+			core.startGroup(`test ${k} panicked in ${results.elapsed}s`)
+			core.error([
+				`test ${k} panicked in ${results.elapsed}s:`,
+				results.output.join(''),
+			].join('\n'));
+			core.endGroup();
+		});
+	}
+
 	if (failed.length > 0) {
 		core.setFailed(`${failed.length}/${totalRun} tests failed`);
 		failed.forEach((k) => {
@@ -129,7 +149,11 @@ export async function runTests() {
 			].join('\n'));
 			core.endGroup();
 		});
-	} else if (exit !== 0) {
+	}
+
+	// if no tests failed or panicked, but Go test still returned non-zero,
+	// then something went wrong.
+	if ((!panicked.size || !failed.length) && exit !== 0) {
 		core.setFailed('Go test failed');
 	}
 }
