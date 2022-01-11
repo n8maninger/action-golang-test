@@ -3054,7 +3054,7 @@ function process(line) {
             results = { elapsed: 0, output: [] };
         switch (parsed.Action) {
             case 'output':
-                if (results.output.indexOf('panic: runtime error:') == 0)
+                if (parsed.Output.indexOf('panic: runtime error:') == 0)
                     panicked.add(key);
                 results.output.push(parsed.Output);
                 break;
