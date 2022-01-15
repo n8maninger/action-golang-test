@@ -3029,7 +3029,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 const optShowStdOut = getBooleanInput('show-stdout'), optShowPackageOut = getBooleanInput('show-package-output'), optShowPassedTests = getBooleanInput('show-passed-tests'), optLongRunningTestDuration = atoiOrDefault(core.getInput('show-long-running-tests'), 15);
-const testOutput = new Map(), failed = [], panicked = new Set();
+const testOutput = new Map(), failed = new Set(), panicked = new Set(), errored = new Set();
 let errout;
 let totalRun = 0;
 const newLineReg = new RegExp(/\r?\n/);
@@ -3056,12 +3056,14 @@ function process(line) {
             case 'output':
                 if (parsed.Output.indexOf('panic: runtime error:') == 0)
                     panicked.add(key);
+                else if (parsed.Output.indexOf('==ERROR:') != -1)
+                    errored.add(key);
                 results.output.push(parsed.Output);
                 break;
             case 'fail':
                 totalRun++;
                 results.elapsed = parseFloatOrDefault(parsed.Elapsed);
-                failed.push(key);
+                failed.add(key);
                 if (optLongRunningTestDuration !== -1 && results.elapsed >= optLongRunningTestDuration)
                     core.info(`\u001b[33m${key} took ${results.elapsed}s to fail`);
                 if (!optShowStdOut)
@@ -3130,8 +3132,8 @@ function runTests() {
                 core.endGroup();
             });
         }
-        if (failed.length > 0) {
-            core.setFailed(`${failed.length}/${totalRun} tests failed`);
+        if (failed.size > 0) {
+            core.setFailed(`${failed.size}/${totalRun} tests failed`);
             failed.forEach((k) => {
                 var _a;
                 const results = testOutput.get(k);
@@ -3145,9 +3147,24 @@ function runTests() {
                 core.endGroup();
             });
         }
+        if (errored.size > 0) {
+            core.setFailed(`${errored.size}/${totalRun} tests errored`);
+            errored.forEach((k) => {
+                var _a;
+                const results = testOutput.get(k);
+                if (!results || !((_a = results === null || results === void 0 ? void 0 : results.output) === null || _a === void 0 ? void 0 : _a.length))
+                    return;
+                core.startGroup(`test ${k} errored in ${results.elapsed}s`);
+                core.error([
+                    `test ${k} errored in ${results.elapsed}s:`,
+                    results.output.join(''),
+                ].join('\n'));
+                core.endGroup();
+            });
+        }
         // if no tests failed or panicked, but Go test still returned non-zero,
         // then something went wrong.
-        if ((!panicked.size || !failed.length) && exit !== 0) {
+        if ((!panicked.size || !failed.size || !errored.size) && exit !== 0) {
             core.setFailed('Go test failed');
         }
     });
