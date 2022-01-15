@@ -13,8 +13,9 @@ const optShowStdOut = getBooleanInput('show-stdout'),
 	optLongRunningTestDuration = atoiOrDefault(core.getInput('show-long-running-tests'), 15);
 
 const testOutput: Map<string, Test> = new Map<string, Test>(),
-	failed: string[] = [],
-	panicked: Set<string> = new Set<string>();
+	failed: Set<string> = new Set<string>(),
+	panicked: Set<string> = new Set<string>(),
+	errored: Set<string> = new Set<string>();
 let errout: string;
 let totalRun = 0;
 
@@ -47,13 +48,15 @@ function process(line: string) {
 		case 'output':
 			if (parsed.Output.indexOf('panic: runtime error:') == 0)
 				panicked.add(key);
+			else if (parsed.Output.indexOf('==ERROR:') != -1)
+				errored.add(key);
 
 			results.output.push(parsed.Output);
 			break;
 		case 'fail':
 			totalRun++;
 			results.elapsed = parseFloatOrDefault(parsed.Elapsed);
-			failed.push(key);
+			failed.add(key);
 
 			if (optLongRunningTestDuration !== -1 && results.elapsed >= optLongRunningTestDuration)
 				core.info(`\u001b[33m${key} took ${results.elapsed}s to fail`);
@@ -135,8 +138,8 @@ export async function runTests() {
 		});
 	}
 
-	if (failed.length > 0) {
-		core.setFailed(`${failed.length}/${totalRun} tests failed`);
+	if (failed.size > 0) {
+		core.setFailed(`${failed.size}/${totalRun} tests failed`);
 		failed.forEach((k) => {
 			const results = testOutput.get(k);
 
@@ -151,9 +154,25 @@ export async function runTests() {
 		});
 	}
 
+	if (errored.size > 0) {
+		core.setFailed(`${errored.size}/${totalRun} tests errored`);
+		errored.forEach((k) => {
+			const results = testOutput.get(k);
+
+			if (!results || !results?.output?.length) return;
+
+			core.startGroup(`test ${k} errored in ${results.elapsed}s`)
+			core.error([
+				`test ${k} errored in ${results.elapsed}s:`,
+				results.output.join(''),
+			].join('\n'));
+			core.endGroup();
+		});
+	}
+
 	// if no tests failed or panicked, but Go test still returned non-zero,
 	// then something went wrong.
-	if ((!panicked.size || !failed.length) && exit !== 0) {
+	if ((!panicked.size || !failed.size || !errored.size) && exit !== 0) {
 		core.setFailed('Go test failed');
 	}
 }
