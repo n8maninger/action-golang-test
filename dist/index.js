@@ -3106,7 +3106,7 @@ function runTests() {
         });
         if (buf.length !== 0)
             process(buf);
-        if (exit !== 0) {
+        if (exit !== 0 && errout) {
             errout = errout
                 .split(/\r?\n/)
                 .filter(l => l.indexOf('go: downloading ') === -1)
