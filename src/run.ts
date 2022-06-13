@@ -1,15 +1,15 @@
 import { exec } from '@actions/exec';
 import * as core from '@actions/core';
-import { getBooleanInput, atoiOrDefault, parseFloatOrDefault } from './utils';
+import { atoiOrDefault, parseFloatOrDefault } from './utils';
 
 interface Test {
 	elapsed: number
 	output: string[]
 }
 
-const optShowStdOut = getBooleanInput('show-stdout'),
-	optShowPackageOut = getBooleanInput('show-package-output'),
-	optShowPassedTests = getBooleanInput('show-passed-tests'),
+const optShowStdOut = core.getBooleanInput('show-stdout'),
+	optShowPackageOut = core.getBooleanInput('show-package-output'),
+	optShowPassedTests = core.getBooleanInput('show-passed-tests'),
 	optLongRunningTestDuration = atoiOrDefault(core.getInput('show-long-running-tests'), 15);
 
 const testOutput: Map<string, Test> = new Map<string, Test>(),
@@ -98,7 +98,7 @@ export async function runTests() {
 
 	const exit = await exec('go', args, {
 		ignoreReturnCode: true,
-		silent: !optShowStdOut,
+		silent: !optShowStdOut && !core.isDebug(),
 		listeners: {
 			// cannot use stdline or errline, since Go's CLI tools do not behave.
 			stdout,
