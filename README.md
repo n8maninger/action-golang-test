@@ -30,8 +30,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-	  - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
       - uses: n8maninger/action-golang-test@v1
 ```
 
@@ -48,8 +48,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-	  - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
       - uses: n8maninger/action-golang-test@v1
         with:
           args: "-race;-failfast;-tags=testing debug netgo"
