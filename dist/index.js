@@ -4170,9 +4170,8 @@ function runTests() {
         }
         // if no tests failed or panicked, but Go test still returned non-zero,
         // then something went wrong.
-        if ((!panicked.size || !failed.size || !errored.size) && exit !== 0) {
+        if ((!panicked.size || !failed.size || !errored.size) && exit !== 0)
             core.setFailed('Go test failed');
-        }
     });
 }
 exports.runTests = runTests;
