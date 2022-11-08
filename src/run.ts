@@ -16,19 +16,29 @@ const testOutput: Map<string, Test> = new Map<string, Test>(),
 	failed: Set<string> = new Set<string>(),
 	panicked: Set<string> = new Set<string>(),
 	errored: Set<string> = new Set<string>();
-let errout: string;
+let errout: string,
+	output: string;
 let totalRun = 0;
 
 const newLineReg = new RegExp(/\r?\n/);
 let buf: string = '';
-function stdout(data: Uint8Array) {
+function parseStdout(data: Uint8Array) {
 	let result: RegExpExecArray | null;
+	output += data.toString();
 	buf += data.toString();
 	while ((result = newLineReg.exec(buf)) !== null) {
 		const line = buf.slice(0, result.index)
 		buf = buf.slice(result.index + result[0].length);
 		process(line);
 	}
+}
+
+function parseStdErr(data: Uint8Array) {
+	if (!data)
+		return;
+
+	errout += data.toString();
+	output += data.toString();
 }
 
 function process(line: string) {
@@ -82,13 +92,6 @@ function process(line: string) {
 	}
 }
 
-function stderr(data: Uint8Array) {
-	if (!data)
-		return;
-
-	errout += data.toString();
-}
-
 export async function runTests() {
 	const args = ['test', '-json', '-v'].concat((core.getInput('args') || '')
 			.split(';').map(a => a.trim()).filter(a => a.length > 0).filter(a => a.length > 0));
@@ -101,8 +104,8 @@ export async function runTests() {
 		silent: !optShowStdOut && !core.isDebug(),
 		listeners: {
 			// cannot use stdline or errline, since Go's CLI tools do not behave.
-			stdout,
-			stderr,
+			stdout: parseStdout,
+			stderr: parseStdErr,
 		},
 	});
 
@@ -173,5 +176,7 @@ export async function runTests() {
 	// if no tests failed or panicked, but Go test still returned non-zero,
 	// then something went wrong.
 	if ((!panicked.size || !failed.size || !errored.size) && exit !== 0)
-		core.setFailed('Go test failed');
+		core.startGroup(`Go test failed with exit code ${exit}`);
+		core.error(output);
+		core.endGroup();
 }
