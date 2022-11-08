@@ -4036,7 +4036,7 @@ const core = __importStar(__nccwpck_require__(186));
 const utils_1 = __nccwpck_require__(314);
 const optShowStdOut = core.getBooleanInput('show-stdout'), optShowPackageOut = core.getBooleanInput('show-package-output'), optShowPassedTests = core.getBooleanInput('show-passed-tests'), optLongRunningTestDuration = (0, utils_1.atoiOrDefault)(core.getInput('show-long-running-tests'), 15);
 const testOutput = new Map(), failed = new Set(), panicked = new Set(), errored = new Set();
-let errout, stdout;
+let errout = '', stdout = '';
 let totalRun = 0;
 const newLineReg = new RegExp(/\r?\n/);
 let buf = '';
@@ -4087,8 +4087,8 @@ function process(line) {
                 totalRun++;
                 results.elapsed = (0, utils_1.parseFloatOrDefault)(parsed.Elapsed);
                 if (optLongRunningTestDuration !== -1 && results.elapsed >= optLongRunningTestDuration)
-                    core.info(`\u001b[33m${key} took ${results.elapsed}s to pass`);
-                if (!optShowStdOut && optShowPassedTests)
+                    core.info(`\u001b[33m${key} passed in ${results.elapsed}s`);
+                else if (!optShowStdOut && optShowPassedTests)
                     core.info(`\u001b[32m${key} passed in ${results.elapsed}s`);
                 break;
         }
@@ -4101,7 +4101,7 @@ function process(line) {
 function runTests() {
     return __awaiter(this, void 0, void 0, function* () {
         const args = ['test', '-json', '-v'].concat((core.getInput('args') || '')
-            .split(';').map(a => a.trim()).filter(a => a.length > 0).filter(a => a.length > 0));
+            .split(';').map(a => a.trim()).filter(a => a.length > 0).filter(a => a.length > 0)), start = Date.now();
         args.push(core.getInput('package'));
         core.info(`Running test as "go ${args.join(' ')}"`);
         const exit = yield (0, exec_1.exec)('go', args, {
@@ -4115,17 +4115,26 @@ function runTests() {
         });
         if (buf.length !== 0)
             process(buf);
-        if (exit !== 0 && errout) {
-            errout = errout
-                .split(/\r?\n/)
-                .filter(l => l.indexOf('go: downloading ') === -1)
-                .join('\n');
-            if (errout.length > 0) {
-                core.startGroup('stderr');
-                core.warning(errout);
-                core.endGroup();
-            }
+        // If go test returns a non-zero exit code with no failed tests, something
+        // went wrong.
+        if (exit !== 0 && panicked.size === 0 && failed.size === 0 && errored.size === 0) {
+            core.setFailed(`go test failed with exit code ${exit}, but no tests failed. Check output for more details`);
+            core.startGroup('stdout');
+            core.info(stdout);
+            core.endGroup();
+            core.startGroup('stderr');
+            core.info(errout);
+            core.endGroup();
+            return;
         }
+        // if something was written to stderr, print it
+        // note: this includes Go package downloads, so it's not always an error
+        if (errout.length > 0) {
+            core.startGroup('stderr');
+            core.info(errout);
+            core.endGroup();
+        }
+        // print any panicked tests
         if (panicked.size > 0) {
             core.setFailed(`${panicked.size}/${totalRun} tests panicked`);
             panicked.forEach(k => {
@@ -4141,21 +4150,7 @@ function runTests() {
                 core.endGroup();
             });
         }
-        if (failed.size > 0) {
-            core.setFailed(`${failed.size}/${totalRun} tests failed`);
-            failed.forEach((k) => {
-                var _a;
-                const results = testOutput.get(k);
-                if (!results || !((_a = results === null || results === void 0 ? void 0 : results.output) === null || _a === void 0 ? void 0 : _a.length))
-                    return;
-                core.startGroup(`test ${k} failed in ${results.elapsed}s`);
-                core.error([
-                    `test ${k} failed in ${results.elapsed}s:`,
-                    results.output.join(''),
-                ].join('\n'));
-                core.endGroup();
-            });
-        }
+        // print any errored tests, includes tests with build errors
         if (errored.size > 0) {
             core.setFailed(`${errored.size}/${totalRun} tests errored`);
             errored.forEach((k) => {
@@ -4171,17 +4166,24 @@ function runTests() {
                 core.endGroup();
             });
         }
-        // if no tests failed or panicked, but Go test still returned non-zero,
-        // then something went wrong.
-        if ((!panicked.size || !failed.size || !errored.size) && exit !== 0) {
-            core.setFailed(`Go test failed with exit code ${exit}`);
-            core.startGroup('stdout');
-            core.error(stdout);
-            core.endGroup();
-            core.startGroup('stderr');
-            core.error(errout);
-            core.endGroup();
+        // print any failed tests
+        if (failed.size > 0) {
+            core.setFailed(`${failed.size}/${totalRun} tests failed`);
+            failed.forEach((k) => {
+                var _a;
+                const results = testOutput.get(k);
+                if (!results || !((_a = results === null || results === void 0 ? void 0 : results.output) === null || _a === void 0 ? void 0 : _a.length))
+                    return;
+                core.startGroup(`test ${k} failed in ${results.elapsed}s`);
+                core.error([
+                    `test ${k} failed in ${results.elapsed}s:`,
+                    results.output.join(''),
+                ].join('\n'));
+                core.endGroup();
+            });
         }
+        const passed = totalRun - failed.size - errored.size - panicked.size, totalElapsed = (Date.now() - start) / 1000;
+        core.info(`\u001b[32m${passed}/${totalRun} tests passed in ${totalElapsed.toFixed(2)}s`);
     });
 }
 exports.runTests = runTests;
