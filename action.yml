@@ -3,7 +3,7 @@ description: Run tests with annotations for failures
 author: Nate Maninger <hi@n8m.us>
 inputs:
   package:
-    description: the package to run the tests for
+    description: the package to run tests for
     default: "./..."
     required: false
   args:
