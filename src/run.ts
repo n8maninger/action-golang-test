@@ -23,6 +23,8 @@ let totalRun = 0;
 const newLineReg = new RegExp(/\r?\n/);
 let buf: string = '';
 function parseStdout(data: Uint8Array) {
+	if (!data)
+		return;
 	let result: RegExpExecArray | null;
 	output += data.toString();
 	buf += data.toString();

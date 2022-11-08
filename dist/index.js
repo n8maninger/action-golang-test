@@ -4041,6 +4041,8 @@ let totalRun = 0;
 const newLineReg = new RegExp(/\r?\n/);
 let buf = '';
 function parseStdout(data) {
+    if (!data)
+        return;
     let result;
     output += data.toString();
     buf += data.toString();
