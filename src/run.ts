@@ -175,8 +175,9 @@ export async function runTests() {
 
 	// if no tests failed or panicked, but Go test still returned non-zero,
 	// then something went wrong.
-	if ((!panicked.size || !failed.size || !errored.size) && exit !== 0)
+	if ((!panicked.size || !failed.size || !errored.size) && exit !== 0) {
 		core.startGroup(`Go test failed with exit code ${exit}`);
 		core.error(output);
 		core.endGroup();
+	}
 }
