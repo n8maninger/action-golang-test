@@ -20,14 +20,14 @@ inputs:
     required: false
   show-passed-tests:
     description: shows tests that were run and passed
-    default: false
+    default: true
     required: false
   show-stdout:
     description: shows the unparsed std-out from go test instead of the parsed output
     default: false
     required: false
   skip-go-install:
-    description: unused only included for compatibility purposes
+    description: deprecated, only included for historical purposes
     default: false
     required: false
 runs:
