@@ -4036,7 +4036,7 @@ const core = __importStar(__nccwpck_require__(186));
 const utils_1 = __nccwpck_require__(314);
 const optShowStdOut = core.getBooleanInput('show-stdout'), optShowPackageOut = core.getBooleanInput('show-package-output'), optShowPassedTests = core.getBooleanInput('show-passed-tests'), optLongRunningTestDuration = (0, utils_1.atoiOrDefault)(core.getInput('show-long-running-tests'), 15);
 const testOutput = new Map(), failed = new Set(), panicked = new Set(), errored = new Set();
-let errout, output;
+let errout, stdout;
 let totalRun = 0;
 const newLineReg = new RegExp(/\r?\n/);
 let buf = '';
@@ -4044,7 +4044,7 @@ function parseStdout(data) {
     if (!data)
         return;
     let result;
-    output += data.toString();
+    stdout += data.toString();
     buf += data.toString();
     while ((result = newLineReg.exec(buf)) !== null) {
         const line = buf.slice(0, result.index);
@@ -4056,7 +4056,6 @@ function parseStdErr(data) {
     if (!data)
         return;
     errout += data.toString();
-    output += data.toString();
 }
 function process(line) {
     try {
@@ -4109,7 +4108,7 @@ function runTests() {
             ignoreReturnCode: true,
             silent: !optShowStdOut && !core.isDebug(),
             listeners: {
-                // cannot use stdline or errline, since Go's CLI tools do not behave.
+                // cannot use stdline or errline because Go's CLI tools do not behave.
                 stdout: parseStdout,
                 stderr: parseStdErr,
             },
@@ -4175,8 +4174,12 @@ function runTests() {
         // if no tests failed or panicked, but Go test still returned non-zero,
         // then something went wrong.
         if ((!panicked.size || !failed.size || !errored.size) && exit !== 0) {
-            core.startGroup(`Go test failed with exit code ${exit}`);
-            core.error(output);
+            core.setFailed(`Go test failed with exit code ${exit}`);
+            core.startGroup('stdout');
+            core.error(stdout);
+            core.endGroup();
+            core.startGroup('stderr');
+            core.error(errout);
             core.endGroup();
         }
     });
