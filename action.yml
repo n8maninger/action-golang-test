@@ -15,7 +15,7 @@ inputs:
     default: 30
     required: false
   show-package-output:
-    description: includes package output in the parsed output
+    description: deprecated, included for historical purposes
     default: false
     required: false
   show-passed-tests:
@@ -27,7 +27,7 @@ inputs:
     default: false
     required: false
   skip-go-install:
-    description: deprecated, only included for historical purposes
+    description: deprecated, included for historical purposes
     default: false
     required: false
 runs:

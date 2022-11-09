@@ -18,7 +18,6 @@ interface Test {
 type Nullable<T> = T | null;
 
 const optShowStdOut = core.getBooleanInput('show-stdout'),
-	optShowPackageOut = core.getBooleanInput('show-package-output'),
 	optShowPassedTests = core.getBooleanInput('show-passed-tests'),
 	optLongRunningTestDuration = atoiOrDefault(core.getInput('show-long-running-tests'), 15);
 
@@ -89,12 +88,8 @@ function parseStdErr(data: Uint8Array) {
 
 function processOutput(line: string) {
 	try {
-		const parsed = JSON.parse(line);
-
-		if (!optShowPackageOut && !parsed.Test)
-			return;
-
-		const key = `${parsed.Package}${parsed.Test ? '/' + parsed.Test : ''}`;
+		const parsed = JSON.parse(line),
+			key = `${parsed.Package}${parsed.Test ? '/' + parsed.Test : ''}`;
 		let results = testOutput.get(key);
 
 		if (!results)
@@ -104,7 +99,7 @@ function processOutput(line: string) {
 		case 'output':
 			if (parsed.Output.indexOf('panic: runtime error:') == 0)
 				panicked.add(key);
-			else if (parsed.Output.indexOf('==ERROR:') != -1)
+			else if (parsed.Output.indexOf('==ERROR:') !== -1)
 				errored.add(key);
 
 			results.output.push(parsed.Output);
@@ -205,7 +200,7 @@ export async function runTests() {
 	}
 
 	// if something was written to stderr, print it
-	// note: this includes Go package downloads, so it's not always an error
+	// note: this can include Go package downloads, so it's not always an error
 	if (errout.length > 0) {
 		core.startGroup('stderr');
 		core.info(errout);
