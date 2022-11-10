@@ -4039,8 +4039,8 @@ const core = __importStar(__nccwpck_require__(186));
 const process_1 = __nccwpck_require__(282);
 const path_1 = __importDefault(__nccwpck_require__(17));
 const utils_1 = __nccwpck_require__(314);
-const optShowStdOut = core.getBooleanInput('show-stdout'), optShowPackageOut = core.getBooleanInput('show-package-output'), optShowPassedTests = core.getBooleanInput('show-passed-tests'), optLongRunningTestDuration = (0, utils_1.atoiOrDefault)(core.getInput('show-long-running-tests'), 15);
-const testOutput = new Map(), failed = new Set(), panicked = new Set(), errored = new Set();
+const optShowStdOut = core.getBooleanInput('show-stdout'), optShowPassedTests = core.getBooleanInput('show-passed-tests'), optShowCodeCoverage = core.getBooleanInput('show-code-coverage'), optLongRunningTestDuration = (0, utils_1.atoiOrDefault)(core.getInput('show-long-running-tests'), 15);
+const testOutput = new Map(), failed = new Set(), panicked = new Set(), errored = new Set(), codeCoverage = new Map();
 let errout = '', stdout = '';
 let totalRun = 0;
 const newLineReg = new RegExp(/\r?\n/);
@@ -4098,19 +4098,23 @@ function parseStdErr(data) {
 }
 function processOutput(line) {
     try {
-        const parsed = JSON.parse(line);
-        if (!optShowPackageOut && !parsed.Test)
-            return;
-        const key = `${parsed.Package}${parsed.Test ? '/' + parsed.Test : ''}`;
+        const parsed = JSON.parse(line), key = `${parsed.Package}${parsed.Test ? '/' + parsed.Test : ''}`;
         let results = testOutput.get(key);
         if (!results)
             results = { package: parsed.Package, elapsed: 0, output: [] };
         switch (parsed.Action) {
             case 'output':
+                // parse panics or errors
                 if (parsed.Output.indexOf('panic: runtime error:') == 0)
                     panicked.add(key);
-                else if (parsed.Output.indexOf('==ERROR:') != -1)
+                else if (parsed.Output.indexOf('==ERROR:') !== -1)
                     errored.add(key);
+                // parse code coverage
+                const coverageReg = new RegExp(/^coverage: (\d+\.\d+)% of statements/), match = parsed.Output.match(coverageReg);
+                if (match)
+                    codeCoverage.set(parsed.Package, parseFloat(match[1]));
+                else if (parsed.Output.indexOf('[no test files]') !== -1 && !codeCoverage.has(parsed.Package))
+                    codeCoverage.set(parsed.Package, 0);
                 results.output.push(parsed.Output);
                 break;
             case 'fail':
@@ -4198,7 +4202,7 @@ function runTests() {
             return;
         }
         // if something was written to stderr, print it
-        // note: this includes Go package downloads, so it's not always an error
+        // note: this can include Go package downloads, so it's not always an error
         if (errout.length > 0) {
             core.startGroup('stderr');
             core.info(errout);
@@ -4257,6 +4261,14 @@ function runTests() {
                 core.info(results.output.join(''));
                 core.endGroup();
             }
+        }
+        if (optShowCodeCoverage) {
+            core.startGroup('Code Coverage');
+            for (const [pkg, coverage] of codeCoverage) {
+                const colorCode = coverage < 30 ? '\u001b[31m' : coverage < 60 ? '\u001b[32m' : '\u001b[33m', msg = `${pkg} coverage: ${colorCode}${coverage}%\u001b[0m of statements`;
+                core.info(msg);
+            }
+            core.endGroup();
         }
         const passed = totalRun - failed.size - errored.size - panicked.size, totalElapsed = (Date.now() - start) / 1000;
         core.info(`\u001b[32m${passed}/${totalRun} tests passed in ${totalElapsed.toFixed(2)}s`);

@@ -30,6 +30,10 @@ inputs:
     description: deprecated, included for historical purposes
     default: false
     required: false
+  show-code-coverage:
+    description: shows code coverage for each package
+    default: true
+    required: false
 runs:
   using: "node16"
   main: "dist/index.js"
