@@ -12,30 +12,30 @@ inputs:
     required: false
   show-long-running-tests:
     description: outputs a warning for long running tests, -1 to disable
-    default: 30
+    default: "30"
     required: false
   show-package-output:
     description: deprecated, included for historical purposes
-    default: false
+    default: "false"
     required: false
   show-passed-tests:
     description: shows tests that were run and passed
-    default: true
+    default: "true"
     required: false
   show-stdout:
     description: shows the unparsed std-out from go test instead of the parsed output
-    default: false
+    default: "false"
     required: false
   skip-go-install:
     description: deprecated, included for historical purposes
-    default: false
+    default: "false"
     required: false
   show-code-coverage:
     description: shows code coverage for each package
-    default: true
+    default: "true"
     required: false
 runs:
-  using: "node16"
+  using: "node20"
   main: "dist/index.js"
 branding:
   icon: check
