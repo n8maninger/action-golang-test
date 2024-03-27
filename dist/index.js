@@ -26031,7 +26031,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const process_1 = __nccwpck_require__(7282);
 const path_1 = __importDefault(__nccwpck_require__(1017));
 const utils_1 = __nccwpck_require__(1314);
-const optShowStdOut = core.getBooleanInput('show-stdout'), optShowPassedTests = core.getBooleanInput('show-passed-tests'), optShowCodeCoverage = core.getBooleanInput('show-code-coverage'), optLongRunningTestDuration = (0, utils_1.atoiOrDefault)(core.getInput('show-long-running-tests'), 15);
+const optShowStdOut = core.getBooleanInput('show-stdout'), optShowPassedTests = core.getBooleanInput('show-passed-tests'), optShowCodeCoverage = core.getBooleanInput('show-code-coverage'), optLongRunningTestDuration = (0, utils_1.atoiOrDefault)(core.getInput('show-long-running-tests'), 15), optWorkingDir = core.getInput('working-directory');
 const testOutput = new Map(), failed = new Set(), panicked = new Set(), errored = new Set(), codeCoverage = new Map();
 let errout = '', stdout = '';
 let totalRun = 0;
@@ -26171,6 +26171,7 @@ function runTests() {
         args.push(core.getInput('package'));
         core.info(`Running test as "go ${args.join(' ')}"`);
         const exit = yield (0, exec_1.exec)('go', args, {
+            cwd: optWorkingDir ? optWorkingDir : undefined,
             ignoreReturnCode: true,
             silent: !optShowStdOut && !core.isDebug(),
             listeners: {
