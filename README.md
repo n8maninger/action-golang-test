@@ -14,6 +14,7 @@ show-long-running-tests | number | outputs a yellow warning for tests that take 
 show-package-output | bool | includes additional package output in the log | false
 show-passed-tests | bool | hides output from passed tests in the log | true
 show-stdout | bool | shows the unparsed stdout from `go test` instead of the parsed output | false
+working-directory | string | sets the working directory to run tests in. Primarily useful for testing mono-repos. | .
 
 ## Usage
 
