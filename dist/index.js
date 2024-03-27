@@ -26054,6 +26054,7 @@ function getRelativeFilePath(goPkg, file) {
         core.debug(`getting package path for ${goPkg}/${file}...`);
         let packagePath = '', errorMsg = '';
         const exitCode = yield (0, exec_1.exec)('go', ['list', '-f', '{{.Dir}}', goPkg], {
+            cwd: optWorkingDir ? optWorkingDir : undefined,
             silent: true,
             ignoreReturnCode: true,
             listeners: {
