@@ -34,6 +34,9 @@ inputs:
     description: shows code coverage for each package
     default: "true"
     required: false
+  working-directory:
+    description: the directory to run go test in
+    required: false
 runs:
   using: "node20"
   main: "dist/index.js"

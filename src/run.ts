@@ -20,7 +20,8 @@ type Nullable<T> = T | null;
 const optShowStdOut = core.getBooleanInput('show-stdout'),
 	optShowPassedTests = core.getBooleanInput('show-passed-tests'),
 	optShowCodeCoverage = core.getBooleanInput('show-code-coverage'),
-	optLongRunningTestDuration = atoiOrDefault(core.getInput('show-long-running-tests'), 15);
+	optLongRunningTestDuration = atoiOrDefault(core.getInput('show-long-running-tests'), 15),
+	optWorkingDir = core.getInput('working-directory');
 
 const testOutput: Map<string, Test> = new Map<string, Test>(),
 	failed: Set<string> = new Set<string>(),
@@ -184,6 +185,7 @@ export async function runTests() {
 	core.info(`Running test as "go ${args.join(' ')}"`);
 
 	const exit = await exec('go', args, {
+		cwd: optWorkingDir ? optWorkingDir : undefined,
 		ignoreReturnCode: true,
 		silent: !optShowStdOut && !core.isDebug(),
 		listeners: {
