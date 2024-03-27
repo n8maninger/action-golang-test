@@ -53,6 +53,7 @@ async function getRelativeFilePath(goPkg: string, file: string) : Promise<string
 	let packagePath = '',
 		errorMsg = '';
 	const exitCode = await exec('go', ['list', '-f', '{{.Dir}}', goPkg], {
+		cwd: optWorkingDir ? optWorkingDir : undefined,
 		silent: true,
 		ignoreReturnCode: true,
 		listeners: {
