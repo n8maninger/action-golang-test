@@ -26031,12 +26031,12 @@ const core = __importStar(__nccwpck_require__(2186));
 const process_1 = __nccwpck_require__(7282);
 const path_1 = __importDefault(__nccwpck_require__(1017));
 const utils_1 = __nccwpck_require__(1314);
-const optShowStdOut = core.getBooleanInput('show-stdout'), optShowPassedTests = core.getBooleanInput('show-passed-tests'), optShowCodeCoverage = core.getBooleanInput('show-code-coverage'), optLongRunningTestDuration = (0, utils_1.atoiOrDefault)(core.getInput('show-long-running-tests'), 15), optWorkingDir = core.getInput('working-directory');
+const optShowPassedTests = core.getBooleanInput("show-passed-tests"), optShowCodeCoverage = core.getBooleanInput("show-code-coverage"), optLongRunningTestDuration = (0, utils_1.atoiOrDefault)(core.getInput("show-long-running-tests"), 15), optWorkingDir = core.getInput("working-directory");
 const testOutput = new Map(), failed = new Set(), panicked = new Set(), errored = new Set(), codeCoverage = new Map();
-let errout = '', stdout = '';
+let errout = "", stdout = "";
 let totalRun = 0;
 const newLineReg = new RegExp(/\r?\n/);
-let buf = '';
+let buf = "";
 function parseStdout(data) {
     if (!data)
         return;
@@ -26052,8 +26052,8 @@ function parseStdout(data) {
 function getRelativeFilePath(goPkg, file) {
     return __awaiter(this, void 0, void 0, function* () {
         core.debug(`getting package path for ${goPkg}/${file}...`);
-        let packagePath = '', errorMsg = '';
-        const exitCode = yield (0, exec_1.exec)('go', ['list', '-f', '{{.Dir}}', goPkg], {
+        let packagePath = "", errorMsg = "";
+        const exitCode = yield (0, exec_1.exec)("go", ["list", "-f", "{{.Dir}}", goPkg], {
             cwd: optWorkingDir ? optWorkingDir : undefined,
             silent: true,
             ignoreReturnCode: true,
@@ -26063,22 +26063,22 @@ function getRelativeFilePath(goPkg, file) {
                 },
                 stderr: (data) => {
                     errorMsg += data.toString();
-                }
-            }
+                },
+            },
         });
         packagePath = packagePath.trim();
         errorMsg = errorMsg.trim();
         if (exitCode !== 0)
             throw new Error(`failed to get package path for ${goPkg}: ${errorMsg}`);
-        else if (packagePath === '')
+        else if (packagePath === "")
             throw new Error(`failed to get package path for ${goPkg} (empty output)`);
         core.debug(`package path for ${goPkg} is ${packagePath}`);
-        const workspace = process_1.env['GITHUB_WORKSPACE'];
+        const workspace = process_1.env["GITHUB_WORKSPACE"];
         let full = path_1.default.join(packagePath, file);
         core.debug(`absolute path for ${goPkg}/${file} is ${full}`);
         if (workspace && full.startsWith(workspace))
             full = full.slice(workspace.length + 1);
-        if (full.startsWith('/'))
+        if (full.startsWith("/"))
             full = full.slice(1);
         core.debug(`relative path for ${goPkg}/${file} is ${full}`);
         return full;
@@ -26091,40 +26091,42 @@ function parseStdErr(data) {
 }
 function processOutput(line) {
     try {
-        const parsed = JSON.parse(line), key = `${parsed.Package}${parsed.Test ? '/' + parsed.Test : ''}`;
+        const parsed = JSON.parse(line), key = `${parsed.Package}${parsed.Test ? "/" + parsed.Test : ""}`;
         let results = testOutput.get(key);
         if (!results)
             results = { package: parsed.Package, elapsed: 0, output: [] };
         switch (parsed.Action) {
-            case 'output':
+            case "output":
                 // parse panics or errors
-                if (parsed.Output.indexOf('panic: runtime error:') == 0)
+                if (parsed.Output.indexOf("panic: runtime error:") == 0)
                     panicked.add(key);
-                else if (parsed.Output.indexOf('==ERROR:') !== -1)
+                else if (parsed.Output.indexOf("==ERROR:") !== -1)
                     errored.add(key);
                 // parse code coverage
                 const coverageReg = new RegExp(/^coverage: (\d+\.\d+)% of statements/), match = parsed.Output.match(coverageReg);
                 if (match)
                     codeCoverage.set(parsed.Package, parseFloat(match[1]));
-                else if (parsed.Output.indexOf('[no test files]') !== -1 && !codeCoverage.has(parsed.Package))
+                else if (parsed.Output.indexOf("[no test files]") !== -1 &&
+                    !codeCoverage.has(parsed.Package))
                     codeCoverage.set(parsed.Package, 0);
                 results.output.push(parsed.Output);
                 break;
-            case 'fail':
+            case "fail":
                 totalRun++;
                 results.elapsed = (0, utils_1.parseFloatOrDefault)(parsed.Elapsed);
                 failed.add(key);
-                if (optLongRunningTestDuration !== -1 && results.elapsed >= optLongRunningTestDuration)
+                if (optLongRunningTestDuration !== -1 &&
+                    results.elapsed >= optLongRunningTestDuration)
                     core.info(`\u001b[33m${key} took ${results.elapsed}s to fail`);
-                if (!optShowStdOut)
-                    core.info(`\u001b[31m${key} failed in ${results.elapsed}s`);
+                core.info(`\u001b[31m${key} failed in ${results.elapsed}s`);
                 break;
-            case 'pass':
+            case "pass":
                 totalRun++;
                 results.elapsed = (0, utils_1.parseFloatOrDefault)(parsed.Elapsed);
-                if (optLongRunningTestDuration !== -1 && results.elapsed >= optLongRunningTestDuration)
+                if (optLongRunningTestDuration !== -1 &&
+                    results.elapsed >= optLongRunningTestDuration)
                     core.info(`\u001b[33m${key} passed in ${results.elapsed}s`);
-                else if (!optShowStdOut && optShowPassedTests)
+                else if (optShowPassedTests)
                     core.info(`\u001b[32m${key} passed in ${results.elapsed}s`);
                 break;
         }
@@ -26139,19 +26141,22 @@ function processAnnotations(output) {
     let current = null;
     for (const line of output) {
         const normalized = line.trim();
-        if (normalized.startsWith('=== RUN') || normalized.startsWith('--- FAIL')) // ignore go test output
+        if (normalized.startsWith("=== RUN") || normalized.startsWith("--- FAIL"))
+            // ignore go test output
             continue;
-        else if (line.startsWith('panic:')) { // panics must be handled separately
+        else if (line.startsWith("panic:")) {
+            // panics must be handled separately
             break;
         }
         const match = normalized.match(goFileRegex);
-        if (match) { // if the output matches, create a new annotation
+        if (match) {
+            // if the output matches, create a new annotation
             if (current)
                 annotations.push(current); // push the current annotation
             current = {
                 file: match[1],
                 line: parseInt(match[2]),
-                text: line
+                text: line,
             };
             continue;
         }
@@ -26162,19 +26167,22 @@ function processAnnotations(output) {
     // push the last annotation
     if (current)
         annotations.push(current);
-    return annotations.map(a => (Object.assign(Object.assign({}, a), { text: a.text.trim() })));
+    return annotations.map((a) => (Object.assign(Object.assign({}, a), { text: a.text.trim() })));
 }
 function runTests() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
-        const args = ['test', '-json', '-v'].concat((core.getInput('args') || '')
-            .split(';').map(a => a.trim()).filter(a => a.length > 0).filter(a => a.length > 0)), start = Date.now();
-        args.push(core.getInput('package'));
-        core.info(`Running test as "go ${args.join(' ')}"`);
-        const exit = yield (0, exec_1.exec)('go', args, {
+        const args = ["test", "-json", "-v"].concat((core.getInput("args") || "")
+            .split(";")
+            .map((a) => a.trim())
+            .filter((a) => a.length > 0)
+            .filter((a) => a.length > 0)), start = Date.now();
+        args.push(core.getInput("package"));
+        core.info(`Running test as "go ${args.join(" ")}"`);
+        const exit = yield (0, exec_1.exec)("go", args, {
             cwd: optWorkingDir ? optWorkingDir : undefined,
             ignoreReturnCode: true,
-            silent: !optShowStdOut && !core.isDebug(),
+            silent: !core.isDebug(),
             listeners: {
                 // cannot use stdline or errline because Go's CLI tools do not behave.
                 stdout: parseStdout,
@@ -26185,33 +26193,23 @@ function runTests() {
             processOutput(buf);
         // If go test returns a non-zero exit code with no failed tests, something
         // went wrong.
-        if (exit !== 0 && panicked.size === 0 && failed.size === 0 && errored.size === 0) {
+        if (exit !== 0 &&
+            panicked.size === 0 &&
+            failed.size === 0 &&
+            errored.size === 0) {
             core.setFailed(`go test failed with exit code ${exit}, but no tests failed. Check output for more details`);
-            core.startGroup('stdout');
-            core.info(stdout);
-            core.endGroup();
-            core.startGroup('stderr');
-            core.info(errout);
-            core.endGroup();
-            return;
-        }
-        // if something was written to stderr, print it
-        // note: this can include Go package downloads, so it's not always an error
-        if (errout.length > 0) {
-            core.startGroup('stderr');
-            core.info(errout);
-            core.endGroup();
         }
         // print any panicked tests
         if (panicked.size > 0) {
             core.setFailed(`${panicked.size}/${totalRun} tests panicked`);
-            panicked.forEach(k => {
+            panicked.forEach((k) => {
                 var _a;
                 const results = testOutput.get(k);
                 if (!results || !((_a = results === null || results === void 0 ? void 0 : results.output) === null || _a === void 0 ? void 0 : _a.length))
                     return;
                 core.startGroup(`Test ${k} output`);
-                core.error(`Test ${k} panicked in ${results.elapsed}s:\n` + results.output.join(''));
+                core.error(`Test ${k} panicked in ${results.elapsed}s:\n` +
+                    results.output.join(""));
                 core.endGroup();
             });
         }
@@ -26224,7 +26222,7 @@ function runTests() {
                 if (!results || !((_a = results === null || results === void 0 ? void 0 : results.output) === null || _a === void 0 ? void 0 : _a.length))
                     return;
                 core.startGroup(`Test ${k} output`);
-                core.error(`Test ${k} errored in ${results.elapsed}s:\n` + results.output.join(''));
+                core.error(`Test ${k} errored in ${results.elapsed}s:\n` + results.output.join(""));
                 core.endGroup();
             });
         }
@@ -26252,14 +26250,30 @@ function runTests() {
                     }
                 }
                 // log the raw output
-                core.info(results.output.join(''));
+                core.info(results.output.join(""));
                 core.endGroup();
             }
         }
+        if (stdout.length > 0) {
+            core.startGroup("stdout");
+            core.info(stdout);
+            core.endGroup();
+        }
+        // if something was written to stderr, print it
+        // note: this can include Go package downloads, it's not always an error
+        if (errout.length > 0) {
+            core.startGroup("stderr");
+            core.info(errout);
+            core.endGroup();
+        }
         if (optShowCodeCoverage) {
-            core.startGroup('Code Coverage');
+            core.startGroup("Code Coverage");
             for (const [pkg, coverage] of codeCoverage) {
-                const colorCode = coverage < 30 ? '\u001b[31m' : coverage < 60 ? '\u001b[32m' : '\u001b[33m', msg = `${pkg} coverage: ${colorCode}${coverage}%\u001b[0m of statements`;
+                const colorCode = coverage < 30
+                    ? "\u001b[31m"
+                    : coverage < 60
+                        ? "\u001b[32m"
+                        : "\u001b[33m", msg = `${pkg} coverage: ${colorCode}${coverage}%\u001b[0m of statements`;
                 core.info(msg);
             }
             core.endGroup();
