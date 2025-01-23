@@ -31,7 +31,8 @@ const testOutput: Map<string, Test> = new Map<string, Test>(),
   errored: Set<string> = new Set<string>(),
   codeCoverage: Map<string, number> = new Map<string, number>();
 let errout: string = "",
-  stdout: string = "";
+  stdout: string = "",
+  processedStdout: string = "";
 let totalRun = 0;
 
 const newLineReg = new RegExp(/\r?\n/);
@@ -101,6 +102,10 @@ function processOutput(line: string) {
     let results = testOutput.get(key);
 
     if (!results) results = { package: parsed.Package, elapsed: 0, output: [] };
+
+    if (parsed.Output) {
+      processedStdout += parsed.Output;
+    }
 
     switch (parsed.Action) {
       case "output":
@@ -290,9 +295,9 @@ export async function runTests() {
     }
   }
 
-  if (stdout.length > 0) {
+  if (processedStdout) {
     core.startGroup("stdout");
-    core.info(stdout);
+    core.info(processedStdout);
     core.endGroup();
   }
 

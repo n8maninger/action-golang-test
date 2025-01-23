@@ -26033,7 +26033,7 @@ const path_1 = __importDefault(__nccwpck_require__(1017));
 const utils_1 = __nccwpck_require__(1314);
 const optShowPassedTests = core.getBooleanInput("show-passed-tests"), optShowCodeCoverage = core.getBooleanInput("show-code-coverage"), optLongRunningTestDuration = (0, utils_1.atoiOrDefault)(core.getInput("show-long-running-tests"), 15), optWorkingDir = core.getInput("working-directory");
 const testOutput = new Map(), failed = new Set(), panicked = new Set(), errored = new Set(), codeCoverage = new Map();
-let errout = "", stdout = "";
+let errout = "", stdout = "", processedStdout = "";
 let totalRun = 0;
 const newLineReg = new RegExp(/\r?\n/);
 let buf = "";
@@ -26095,6 +26095,9 @@ function processOutput(line) {
         let results = testOutput.get(key);
         if (!results)
             results = { package: parsed.Package, elapsed: 0, output: [] };
+        if (parsed.Output) {
+            processedStdout += parsed.Output;
+        }
         switch (parsed.Action) {
             case "output":
                 // parse panics or errors
@@ -26254,9 +26257,9 @@ function runTests() {
                 core.endGroup();
             }
         }
-        if (stdout.length > 0) {
+        if (processedStdout) {
             core.startGroup("stdout");
-            core.info(stdout);
+            core.info(processedStdout);
             core.endGroup();
         }
         // if something was written to stderr, print it
